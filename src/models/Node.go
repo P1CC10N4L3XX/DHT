@@ -1,9 +1,7 @@
 package models
 
 type Node struct {
-	ID        int
-	Parent    *Node
-	Childrens **Node
-	nephews   **Node
-	Resources map[int]string
+	ID   string
+	Port string
+	Host string
 }

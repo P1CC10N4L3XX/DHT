@@ -1,0 +1,119 @@
+syntax = "proto3";
+
+package protoBuffer;
+option go_package = "src/proto/stubs";
+
+message NodeInfo {
+  string id = 1;
+  string host = 2;
+  string port = 3;
+}
+
+message ResourceMeta {
+  string key = 1;
+  string filename = 2;
+  int64 size = 3;
+}
+
+
+//Servizi JOIN/LEAVE
+
+message JoinRequest {
+  string Host = 1;
+  string Port = 2;
+  int64 next = 3;
+}
+
+message JoinResponse {
+  string status = 1;
+  repeated NodeInfo childs = 2;
+  repeated NodeInfo nephews = 3;
+}
+
+message LeaveRequest {
+  NodeInfo node = 1;
+}
+
+message LeaveResponse {
+  string status = 1;
+}
+
+
+//Servizi PUT/GET (risorse)
+
+message PutRequest {
+  NodeInfo stored_at = 1;
+  string status = 2;
+}
+
+message PutResponse {
+  NodeInfo stored_at = 1;
+  string status = 2;
+}
+
+message GetRequest {
+  string key = 1;
+}
+
+message GetResponse {
+  ResourceMeta meta = 1;
+  bytes data = 2;
+  string status = 3;
+}
+
+message FileChunk {
+  string key = 1;
+  bytes chunk = 2;
+}
+
+message FileAck {
+  string status = 1;
+}
+
+//Custodia chiavi/risorse
+
+message TransferRoutingRequest {
+  NodeInfo new_owner = 1;
+}
+
+message TransferRoutingResponse {
+  repeated NodeInfo entries = 1;
+  string status = 2;
+}
+
+message ChangeParentRequest {
+  NodeInfo new_parent = 1;
+}
+
+message ChangeParentResponse {
+  string status = 1;
+}
+
+//Servizi diagnostici
+
+message PingRequest {
+  string msg = 1;
+}
+
+message PingResponse {
+  string reply = 1;
+}
+
+//definizione dei servizi
+
+service DHT{
+  //JOIN / LEAVE
+  rpc JoinNode(JoinRequest) returns (JoinResponse);
+  rpc LeaveNode(LeaveRequest) returns (LeaveResponse);
+
+  //PUT / GET
+  rpc PutResource(PutRequest) returns (PutResponse);
+  rpc GetResource(GetRequest) returns (GetResponse);
+
+  //Custodia
+  rpc TransferRouting(TransferRoutingRequest) returns (TransferRoutingResponse);
+  rpc ChangeParent(ChangeParentRequest) returns (ChangeParentResponse);
+
+  //Diagnostica
+  rpc Ping(PingRequest) returns (PingResponse);
+}

@@ -1,0 +1,57 @@
+services:
+  node0:
+    build: .
+    container_name: node0
+    hostname: node0
+    command: ["/app/dht", "-entry"]
+    ports:
+      - "50052:50051"
+    volumes:
+      - ./data/node0:/app/data
+    environment:
+      - NODE_NAME=node0
+      - NODE_PORT=50050
+    networks:
+      - dht_net
+
+  node1:
+    build: .
+    container_name: node1
+    hostname: node1
+    command: ["/app/dht"]
+    ports:
+      - "50053:50051"
+    volumes:
+      - ./data/node1:/app/data
+    environment:
+      - NODE_NAME=node1
+      - NODE_PORT=50051
+      - ENTRY_HOST=node0
+      - ENTRY_PORT=50051
+    depends_on:
+      - node0
+    networks:
+      - dht_net
+
+  node2:
+    build: .
+    container_name: node2
+    hostname: node2
+    command: ["/app/dht"]
+    ports:
+      - "50054:50051"
+    volumes:
+      - ./data/node2:/app/data
+    environment:
+      - NODE_NAME=node2
+      - NODE_PORT=50052
+      - ENTRY_HOST=node0
+      - ENTRY_PORT=50051
+    depends_on:
+      - node0
+    networks:
+      - dht_net
+
+networks:
+  dht_net:
+    driver: bridge
