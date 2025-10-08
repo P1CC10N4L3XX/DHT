@@ -9,10 +9,9 @@ message NodeInfo {
   string port = 3;
 }
 
-message ResourceMeta {
+message Resource {
   string key = 1;
-  string filename = 2;
-  int64 size = 3;
+  string value = 2;
 }
 
 
@@ -21,7 +20,7 @@ message ResourceMeta {
 message JoinRequest {
   string Host = 1;
   string Port = 2;
-  int64 next = 3;
+  string next = 3;
 }
 
 message JoinResponse {
@@ -31,7 +30,9 @@ message JoinResponse {
 }
 
 message LeaveRequest {
-  NodeInfo node = 1;
+  NodeInfo nodeToLeave = 1;
+  repeated NodeInfo childs = 2;
+  repeated NodeInfo nephews = 3;
 }
 
 message LeaveResponse {
@@ -42,23 +43,22 @@ message LeaveResponse {
 //Servizi PUT/GET (risorse)
 
 message PutRequest {
-  NodeInfo stored_at = 1;
-  string status = 2;
+  Resource resource = 1;
+  string next = 2;
 }
 
 message PutResponse {
-  NodeInfo stored_at = 1;
   string status = 2;
 }
 
 message GetRequest {
   string key = 1;
+  string next = 2;
 }
 
 message GetResponse {
-  ResourceMeta meta = 1;
-  bytes data = 2;
-  string status = 3;
+  Resource resource = 1;
+  string status = 2;
 }
 
 message FileChunk {

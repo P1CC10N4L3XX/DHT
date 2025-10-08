@@ -2,10 +2,10 @@ services:
   node0:
     image: dht-node
     container_name: node0
-    hostname: node0
-    stdin_open: true
     tty: true
-    command: tail -f /dev/null
+    stdin_open: true
+    hostname: node0
+    command: ["./dht", "-entry"]
     ports:
       - "50052:50051"
     volumes:
@@ -13,22 +13,22 @@ services:
     environment:
       - NODE_NAME=node0
       - NODE_PORT=50051
+      - ENTRY_HOST=node0
+      - ENTRY_PORT=50051
     restart: "no"
 
   node1:
     image: dht-node
     container_name: node1
-    hostname: node1
-    stdin_open: true
     tty: true
-    command: tail -f /dev/null
+    stdin_open: true
+    hostname: node1
+    command: ["./dht"]
     ports:
       - "50053:50051"
     volumes:
       - /app/data
     environment:
-      - NODE_NAME=node1
-      - NODE_PORT=50052
       - ENTRY_HOST=node0
       - ENTRY_PORT=50051
     depends_on:
@@ -38,17 +38,87 @@ services:
   node2:
     image: dht-node
     container_name: node2
-    hostname: node2
-    stdin_open: true
     tty: true
-    command: tail -f /dev/null
+    stdin_open: true
+    hostname: node2
+    command: ["./dht"]
     ports:
       - "50054:50051"
     volumes:
       - /app/data
     environment:
-      - NODE_NAME=node2
-      - NODE_PORT=50053
+      - ENTRY_HOST=node0
+      - ENTRY_PORT=50051
+    depends_on:
+      - node0
+    restart: "no"
+
+  node3:
+    image: dht-node
+    container_name: node3
+    tty: true
+    stdin_open: true
+    hostname: node3
+    command: ["./dht"]
+    ports:
+      - "50055:50051"
+    volumes:
+      - /app/data
+    environment:
+      - ENTRY_HOST=node0
+      - ENTRY_PORT=50051
+    depends_on:
+      - node0
+    restart: "no"
+
+  node4:
+    image: dht-node
+    container_name: node4
+    tty: true
+    stdin_open: true
+    hostname: node4
+    command: ["./dht"]
+    ports:
+      - "50056:50051"
+    volumes:
+      - /app/data
+    environment:
+      - ENTRY_HOST=node0
+      - ENTRY_PORT=50051
+    depends_on:
+      - node0
+    restart: "no"
+
+  node5:
+    image: dht-node
+    container_name: node5
+    tty: true
+    stdin_open: true
+    hostname: node5
+    command: ["./dht"]
+    ports:
+      - "50057:50051"
+    volumes:
+      - /app/data
+    environment:
+      - ENTRY_HOST=node0
+      - ENTRY_PORT=50051
+    depends_on:
+      - node0
+    restart: "no"
+
+  node6:
+    image: dht-node
+    container_name: node6
+    tty: true
+    stdin_open: true
+    hostname: node6
+    command: ["./dht"]
+    ports:
+      - "50058:50051"
+    volumes:
+      - /app/data
+    environment:
       - ENTRY_HOST=node0
       - ENTRY_PORT=50051
     depends_on:

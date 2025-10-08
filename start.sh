@@ -1,29 +1,46 @@
 #!/bin/bash
 
-# Numero di nodi da avviare
-NUM_NODES=3
-BASE_PORT=50051
+SESSION_NAME="dht_cluster"
+TMUX_CONF="/tmp/tmux_dht.conf"
 
-for i in $(seq 0 $((NUM_NODES-1))); do
-  NODE_NAME="node$i"
-  HOST_PORT=$((BASE_PORT + i))
+# Legge i servizi definiti nel docker-compose.yml
+NODES=$(docker-compose config --services | grep '^node')
 
-  # Avvia container se non esiste
-  if [ ! "$(docker ps -aq -f name=$NODE_NAME)" ]; then
-    docker run --rm -dit --name $NODE_NAME \
-      --network dht_net \
-      -v /app/data \
-      -e NODE_NAME=$NODE_NAME \
-      -e NODE_PORT=$HOST_PORT \
-      $( [ $i -eq 0 ] && echo "-e ENTRY_HOST=" ) \
-      dht-node tail -f /dev/null
+if [ -z "$NODES" ]; then
+  echo "❌ Nessun nodo trovato nel docker-compose.yml"
+  exit 1
+fi
+
+# Crea configurazione tmux temporanea
+cat > "$TMUX_CONF" <<EOF
+set -g mouse on
+set -g status on
+setw -g window-status-current-style bg=green,fg=black
+set -g status-style bg=black,fg=white
+EOF
+
+FIRST_NODE=true
+
+for NODE in $NODES; do
+  # Controlla se il container è attivo
+  RUNNING=$(docker ps -q -f name=^${NODE}$)
+  if [ -z "$RUNNING" ]; then
+    echo "⚠️  Il container $NODE non è in esecuzione. Avvia con: docker compose up -d $NODE"
+    continue
   fi
 
-  # Apri terminale e avvia l'app
-  if [ $i -eq 0 ]; then
-    # Node0 con -entry
-    osascript -e "tell application \"Terminal\" to do script \"docker exec -it $NODE_NAME /app/dht -entry\""
+  # Comando per attach
+  CMD="echo Press enter...;docker attach $NODE"
+
+  if [ "$FIRST_NODE" = true ]; then
+    tmux -f "$TMUX_CONF" new-session -d -s "$SESSION_NAME" -n "$NODE" "$CMD"
+    FIRST_NODE=false
   else
-    osascript -e "tell application \"Terminal\" to do script \"docker exec -it $NODE_NAME /app/dht\""
+    tmux new-window -t "$SESSION_NAME" -n "$NODE" "$CMD"
   fi
 done
+
+# Attacca la sessione tmux
+tmux attach -t "$SESSION_NAME"
+
+

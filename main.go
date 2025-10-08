@@ -11,6 +11,8 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 func startGRPCServer(node models.Node) {
@@ -29,9 +31,25 @@ func startGRPCServer(node models.Node) {
 	}
 }
 
-func main() {
+func closeTerminal() {
+	fmt.Println("Chiudo il terminale...")
+	cmd := "exit"
+	_ = syscall.Exec("/bin/sh", []string{"sh", "-c", cmd}, os.Environ())
+}
 
-	join := controller.Join{}
+func main() {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
+
+	// Goroutine per gestire il segnale
+	go func() {
+		<-sigs
+		fmt.Println("\n🛑 Chiusura richiesta...")
+
+		closeTerminal()
+	}()
+
+	join := controller.JoinController{}
 	if len(os.Args) > 1 && os.Args[1] == "-entry" {
 		if err := join.InitConnectionAsEntry(); err != nil {
 			log.Fatal(err)

@@ -18,9 +18,9 @@ import (
 	pb "DHT/src/proto/stubs"
 )
 
-type Join struct{}
+type JoinController struct{}
 
-func (j *Join) InitConnectionAsEntry() error {
+func (j *JoinController) InitConnectionAsEntry() error {
 	hostname, _ := os.Hostname()
 	node := models.Node{
 		ID:   "0",
@@ -32,21 +32,21 @@ func (j *Join) InitConnectionAsEntry() error {
 	return nil
 }
 
-func (j *Join) InitConnection() error {
+func (j *JoinController) InitConnection() error {
 	hostname, _ := os.Hostname()
 	ts := time.Now().Unix()
 	meta := fmt.Sprintf("%s-%s", hostname, ts)
 	id := utils.Hash(meta)
+	fmt.Println(id)
 	path := utils.BuildPath(id)
 	currentAddr := os.Getenv("ENTRY_HOST") + ":" + os.Getenv("ENTRY_PORT")
-	for i := 0; i < len(path); i++ {
+	for i := 1; i < len(path); i++ {
 		target := path[i]
 		conn, err := grpc.Dial(currentAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			return err
 		}
 		defer conn.Close()
-
 		client := pb.NewDHTClient(conn)
 		req := &pb.JoinRequest{Host: hostname, Port: config.Port, Next: target}
 

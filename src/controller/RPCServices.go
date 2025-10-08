@@ -33,17 +33,34 @@ func (s *DhtServer) JoinNode(ctx context.Context, req *pb.JoinRequest) (*pb.Join
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(len(childs))
 	if len(childs) < 2 {
 		return addNodeAsChild(req, childs, childsDao)
 	}
 	for _, child := range childs {
-		if child.ID == fmt.Sprintf("%d", req.Next) {
+		if child.ID == req.Next {
 			return &pb.JoinResponse{Status: fmt.Sprintf("CONTACT_CHILD:%s:%s", child.Host, child.Port)}, nil
 		}
 	}
 	return nil, nil
 }
+
+/*func (s *DhtServer) LeaveNode(ctx context.Context, req *pb.LeaveRequest) (*pb.LeaveResponse, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	childsDao, err := dao.NewChildsDAO()
+	defer childsDao.Close()
+	if err != nil {
+		return nil, err
+	}
+	nephewsDao, err := dao.NewNephewsDAO()
+	if err != nil {
+		return nil, err
+	}
+	defer nephewsDao.Close()
+	nodeToLeave := models.Node{ID: req.NodeToLeave.Id, Host: req.NodeToLeave.Host, Port: req.NodeToLeave.Port}
+
+	return &pb.LeaveResponse{Status: "OK"}, nil
+}*/
 
 func (s *DhtServer) ChangeParent(ctx context.Context, req *pb.ChangeParentRequest) (*pb.ChangeParentResponse, error) {
 	parentDao, err := dao.NewParentDAO()
@@ -59,8 +76,69 @@ func (s *DhtServer) ChangeParent(ctx context.Context, req *pb.ChangeParentReques
 	return &pb.ChangeParentResponse{Status: "OK"}, nil
 }
 
+func (s *DhtServer) PutResource(ctx context.Context, req *pb.PutRequest) (*pb.PutResponse, error) {
+	childsDao, err := dao.NewChildsDAO()
+	if err != nil {
+		return nil, err
+	}
+	defer childsDao.Close()
+	childs, err := childsDao.ReadAllChilds()
+	if err != nil {
+		return nil, err
+	}
+	for _, child := range childs {
+		if child.ID == req.Next {
+			return &pb.PutResponse{Status: "CONTACT_CHILD:" + child.Host + ":" + child.Port}, nil
+		}
+	}
+	resourceDao, err := dao.NewResourceDAO()
+	if err != nil {
+		return nil, err
+	}
+	defer resourceDao.Close()
+	resource := models.Resource{
+		Key:   req.Resource.Key,
+		Value: req.Resource.Value,
+	}
+	if err := resourceDao.WriteResource(resource); err != nil {
+		return nil, err
+	}
+	return &pb.PutResponse{Status: "RESOURCE_STORED"}, nil
+}
+
+func (s *DhtServer) GetResource(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, error) {
+	resourceDao, err := dao.NewResourceDAO()
+	if err != nil {
+		return nil, err
+	}
+	defer resourceDao.Close()
+	resource, err := resourceDao.ReadResourceByKey(req.Key)
+	if err != nil {
+		return nil, err
+	}
+	if resource != (models.Resource{}) {
+		resourceResp := &pb.Resource{Key: resource.Key, Value: resource.Value}
+		return &pb.GetResponse{Status: "RESOURCE_DETECTED", Resource: resourceResp}, nil
+	}
+
+	childsDao, err := dao.NewChildsDAO()
+	if err != nil {
+		return nil, err
+	}
+	defer childsDao.Close()
+	childs, err := childsDao.ReadAllChilds()
+	if err != nil {
+		return nil, err
+	}
+	for _, child := range childs {
+		if child.ID == req.Next {
+			return &pb.GetResponse{Status: "CONTACT_CHILD:" + child.Host + ":" + child.Port}, nil
+		}
+	}
+	return &pb.GetResponse{Status: "RESOURCE_NOTFOUND"}, nil
+}
+
 func addNodeAsChild(req *pb.JoinRequest, childs []models.Node, childsDao *dao.ChildsDAO) (*pb.JoinResponse, error) {
-	fmt.Println("entrata in addNodeAsChild")
 	nephewsDao, err := dao.NewNephewsDAO()
 	if err != nil {
 		return nil, err
@@ -98,17 +176,17 @@ func addNodeAsChild(req *pb.JoinRequest, childs []models.Node, childsDao *dao.Ch
 	}
 	var ChildsResp []*pb.NodeInfo
 	var NephewsResp []*pb.NodeInfo
-	for nephew := range nephews {
-		if isChild(nephews[nephew], nodeToSaveAsChild) {
-			if err := contactNodeToChangeParent(nephews[nephew], nodeToSaveAsChild); err != nil {
+	for _, nephew := range nephews {
+		if isChild(nephew, nodeToSaveAsChild) {
+			if err := contactNodeToChangeParent(nephew, nodeToSaveAsChild); err != nil {
 				return nil, err
 			}
-			ChildsResp = append(ChildsResp, &pb.NodeInfo{Id: nephews[nephew].ID, Port: nephews[nephew].Port, Host: nephews[nephew].Port})
-		} else if isNephew(nephews[nephew], nodeToSaveAsChild) {
-			if err := contactNodeToChangeParent(nephews[nephew], nodeToSaveAsChild); err != nil {
+			ChildsResp = append(ChildsResp, &pb.NodeInfo{Id: nephew.ID, Port: nephew.Port, Host: nephew.Port})
+		} else if isNephew(nephew, nodeToSaveAsChild) {
+			if err := contactNodeToChangeParent(nephew, nodeToSaveAsChild); err != nil {
 				return nil, err
 			}
-			NephewsResp = append(NephewsResp, &pb.NodeInfo{Id: nephews[nephew].ID, Port: nephews[nephew].Port, Host: nephews[nephew].Host})
+			NephewsResp = append(NephewsResp, &pb.NodeInfo{Id: nephew.ID, Port: nephew.Port, Host: nephew.Host})
 
 		}
 	}

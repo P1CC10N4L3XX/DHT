@@ -23,8 +23,9 @@ COPY --from=build /dht /app/dht
 
 # Copia eventuali sorgenti se servono runtime (es. routing CSV)
 COPY src/routing/ /app/src/routing/
+COPY src/Data/ /app/src/Data/
 
 # Apri stdin e tty per poter interagire con l'app via docker exec
 # Non avvia l'app direttamente, così eviti conflitti di porta
 # L'app verrà avviata manualmente con docker exec
-CMD ["tail", "-f", "/dev/null"]
+CMD ["/app/dht"]
