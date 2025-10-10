@@ -26,7 +26,8 @@ cat >> $FILE_YML <<EOL
     ports:
       - "50052:50051"
     volumes:
-      - /app/data
+      - ./data/node0/resources:/app/data/resources
+      - ./data/node0/routing:/app/data/routing
     environment:
       - NODE_NAME=node0
       - NODE_PORT=50051
@@ -51,7 +52,8 @@ for i in $(seq 1 $((NUM_NODES-1))); do
     ports:
       - "${PORT}:50051"
     volumes:
-      - /app/data
+      - ./data/node$i/resources:/app/data/resources
+      - ./data/node$i/routing:/app/data/routing
     environment:
       - ENTRY_HOST=node0
       - ENTRY_PORT=50051
@@ -70,4 +72,5 @@ networks:
 EOL
 
 echo "✅ File ${FILE_YML} generato con $NUM_NODES nodi."
+
 
