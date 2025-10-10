@@ -29,7 +29,10 @@ func (l *LeaveController) Leave() error {
 		return err
 	}
 	defer nephewsDao.Close()
-
+	resourcesDao, err := dao.NewResourceDAO()
+	if err != nil {
+		return err
+	}
 	parent, err := parentDao.ReadParent()
 	if err != nil {
 		return err
@@ -42,7 +45,10 @@ func (l *LeaveController) Leave() error {
 	if err != nil {
 		return err
 	}
-
+	resources, err := resourcesDao.ReadAllResources()
+	if err != nil {
+		return err
+	}
 	addr := fmt.Sprintf("%s:%s", parent.Host, parent.Port)
 
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -54,13 +60,17 @@ func (l *LeaveController) Leave() error {
 	nodeToLeave := &pb.NodeInfo{Id: session.GetSession().Node.ID, Host: session.GetSession().Node.Host, Port: session.GetSession().Node.Port}
 	var childsReq []*pb.NodeInfo
 	var nephewsReq []*pb.NodeInfo
+	var resourcesReq []*pb.Resource
 	for _, child := range childs {
 		childsReq = append(childsReq, &pb.NodeInfo{Id: child.ID, Host: child.Host, Port: child.Port})
 	}
 	for _, nephew := range nephews {
 		nephewsReq = append(nephewsReq, &pb.NodeInfo{Id: nephew.ID, Host: nephew.Host, Port: nephew.Port})
 	}
-	req := &pb.LeaveRequest{NodeToLeave: nodeToLeave, Childs: childsReq, Nephews: nephewsReq}
+	for _, resource := range resources {
+		resourcesReq = append(resourcesReq, &pb.Resource{Key: resource.Key, Value: resource.Value})
+	}
+	req := &pb.LeaveRequest{NodeToLeave: nodeToLeave, Childs: childsReq, Nephews: nephewsReq, Resources: resourcesReq}
 	resp, err := client.LeaveNode(context.Background(), req)
 	if err != nil {
 		return err

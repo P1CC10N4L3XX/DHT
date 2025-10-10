@@ -33,6 +33,7 @@ message LeaveRequest {
   NodeInfo nodeToLeave = 1;
   repeated NodeInfo childs = 2;
   repeated NodeInfo nephews = 3;
+  repeated Resource resources = 4;
 }
 
 message LeaveResponse {
@@ -61,26 +62,6 @@ message GetResponse {
   string status = 2;
 }
 
-message FileChunk {
-  string key = 1;
-  bytes chunk = 2;
-}
-
-message FileAck {
-  string status = 1;
-}
-
-//Custodia chiavi/risorse
-
-message TransferRoutingRequest {
-  NodeInfo new_owner = 1;
-}
-
-message TransferRoutingResponse {
-  repeated NodeInfo entries = 1;
-  string status = 2;
-}
-
 message ChangeParentRequest {
   NodeInfo new_parent = 1;
 }
@@ -89,17 +70,7 @@ message ChangeParentResponse {
   string status = 1;
 }
 
-//Servizi diagnostici
 
-message PingRequest {
-  string msg = 1;
-}
-
-message PingResponse {
-  string reply = 1;
-}
-
-//definizione dei servizi
 
 service DHT{
   //JOIN / LEAVE
@@ -111,9 +82,6 @@ service DHT{
   rpc GetResource(GetRequest) returns (GetResponse);
 
   //Custodia
-  rpc TransferRouting(TransferRoutingRequest) returns (TransferRoutingResponse);
   rpc ChangeParent(ChangeParentRequest) returns (ChangeParentResponse);
 
-  //Diagnostica
-  rpc Ping(PingRequest) returns (PingResponse);
 }

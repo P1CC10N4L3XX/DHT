@@ -39,3 +39,11 @@ func (dao *ResourceDAO) ReadResourceByKey(key string) (models.Resource, error) {
 	}
 	return models.Resource{}, nil
 }
+
+func (dao *ResourceDAO) ReadAllResources() ([]models.Resource, error) {
+	resources, err := utils.ReadAllResourcesFromCSV(dao.file)
+	if err != nil {
+		return []models.Resource{}, err
+	}
+	return resources, nil
+}

@@ -60,6 +60,10 @@ func (s *DhtServer) LeaveNode(ctx context.Context, req *pb.LeaveRequest) (*pb.Le
 		return nil, err
 	}
 	defer nephewsDao.Close()
+	resourcesDao, err := dao.NewResourceDAO()
+	if err != nil {
+		return nil, err
+	}
 	nodeToLeave := models.Node{ID: req.NodeToLeave.Id, Host: req.NodeToLeave.Host, Port: req.NodeToLeave.Port}
 	for _, childReq := range req.Childs {
 		child := models.Node{ID: childReq.Id, Host: childReq.Host, Port: childReq.Port}
@@ -79,12 +83,19 @@ func (s *DhtServer) LeaveNode(ctx context.Context, req *pb.LeaveRequest) (*pb.Le
 			return nil, err
 		}
 	}
+	for _, resourceReq := range req.Resources {
+		resource := models.Resource{Key: resourceReq.Key, Value: resourceReq.Value}
+		if err := resourcesDao.WriteResource(resource); err != nil {
+			return nil, err
+		}
+	}
 	if err := childsDao.RemoveChild(nodeToLeave); err != nil {
 		return nil, err
 	}
 	if err := nephewsDao.RemoveNephew(nodeToLeave); err != nil {
 		return nil, err
 	}
+
 	return &pb.LeaveResponse{Status: "OK"}, nil
 }
 

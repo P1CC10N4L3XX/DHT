@@ -2,6 +2,7 @@ package UI
 
 import (
 	"DHT/src/controller"
+	"DHT/src/dao"
 	"DHT/src/models"
 	"DHT/src/session"
 	"DHT/src/utils"
@@ -71,8 +72,8 @@ func StartUI() {
 			}
 
 		case "show":
-			node := session.GetSession().Node
-			fmt.Printf("Nodo attivo -> ID=%s, Host=%s, Port=%s\n", node.ID, node.Host, node.Port)
+			showInfo()
+
 		case "help":
 			showHelp()
 		default:
@@ -91,4 +92,52 @@ func showHelp() {
 	fmt.Println(" ping <id>   -> ping al nodo con un certo id")
 	fmt.Println(" help        -> mostra legenda comandi")
 	fmt.Println("==============================")
+}
+
+func showInfo() {
+	node := session.GetSession().Node
+	parentDao, err := dao.NewParentDAO()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer parentDao.Close()
+	childsDao, err := dao.NewChildsDAO()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer childsDao.Close()
+	nephewsDao, err := dao.NewNephewsDAO()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer nephewsDao.Close()
+	resourceDao, err := dao.NewResourceDAO()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resourceDao.Close()
+	fmt.Printf("Nodo attivo -> ID=%s, Host=%s, Port=%s\n", node.ID, node.Host, node.Port)
+	parent, err := parentDao.ReadParent()
+	if err != nil {
+		log.Fatal(err)
+	}
+	childs, err := childsDao.ReadAllChilds()
+	if err != nil {
+		log.Fatal(err)
+	}
+	nephews, err := nephewsDao.ReadAllNephews()
+	if err != nil {
+		log.Fatal(err)
+	}
+	resources, err := resourceDao.ReadAllResources()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("Nodo genitore-->" + "ID:" + parent.ID + ", Host:" + parent.Host + ", Port:" + parent.Port)
+	fmt.Println("Childs:")
+	utils.PrintNodesTable(childs)
+	fmt.Println("Nephews:")
+	utils.PrintNodesTable(nephews)
+	fmt.Println("Resources:")
+	utils.PrintResourcesTable(resources)
 }

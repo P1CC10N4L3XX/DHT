@@ -166,3 +166,18 @@ func IndexOf(slice []string, target string) int {
 	}
 	return -1
 }
+
+func PrintNodesTable(nodes []models.Node) {
+	fmt.Printf("%-10s | %-15s | %-6s\n", "ID", "Host", "Port")
+	fmt.Println("----------------------------------------")
+	for _, node := range nodes {
+		fmt.Printf("%-10s | %-15s | %-6s\n", node.ID, node.Host, node.Port)
+	}
+}
+func PrintResourcesTable(resources []models.Resource) {
+	fmt.Printf("%-10s | %-20s\n", "Key", "Value")
+	fmt.Println("----------------------------------")
+	for _, r := range resources {
+		fmt.Printf("%-10s | %-20s\n", r.Key, r.Value)
+	}
+}
