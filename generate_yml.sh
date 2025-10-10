@@ -9,20 +9,20 @@ fi
 NUM_NODES=$1
 FILE_YML="docker-compose.yml"
 
-# Inizio file yml
+# Inizio file YAML
 cat > $FILE_YML <<EOL
 services:
 EOL
 
-# Genera node0 (entry node)
+# --- node0 (entry node) ---
 cat >> $FILE_YML <<EOL
   node0:
     image: dht-node
     container_name: node0
-    hostname: node0
-    stdin_open: true
     tty: true
-    command: tail -f /dev/null
+    stdin_open: true
+    hostname: node0
+    command: ["./dht", "-entry"]
     ports:
       - "50052:50051"
     volumes:
@@ -30,11 +30,13 @@ cat >> $FILE_YML <<EOL
     environment:
       - NODE_NAME=node0
       - NODE_PORT=50051
+      - ENTRY_HOST=node0
+      - ENTRY_PORT=50051
     restart: "no"
 
 EOL
 
-# Genera gli altri nodi
+# --- altri nodi ---
 PORT_BASE=50053
 for i in $(seq 1 $((NUM_NODES-1))); do
     PORT=$((PORT_BASE + i - 1))
@@ -42,10 +44,10 @@ for i in $(seq 1 $((NUM_NODES-1))); do
   node$i:
     image: dht-node
     container_name: node$i
-    hostname: node$i
-    stdin_open: true
     tty: true
-    command: tail -f /dev/null
+    stdin_open: true
+    hostname: node$i
+    command: ["./dht"]
     ports:
       - "${PORT}:50051"
     volumes:
@@ -60,11 +62,12 @@ for i in $(seq 1 $((NUM_NODES-1))); do
 EOL
 done
 
-# Rete
+# --- rete ---
 cat >> $FILE_YML <<EOL
 networks:
   dht_net:
     driver: bridge
 EOL
 
-echo "docker-compose.yml generato con $NUM_NODES nodi."
+echo "✅ File ${FILE_YML} generato con $NUM_NODES nodi."
+

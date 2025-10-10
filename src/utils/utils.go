@@ -5,6 +5,7 @@ import (
 	"DHT/src/models"
 	"crypto/sha1"
 	"encoding/csv"
+	"fmt"
 	"math/big"
 	"os"
 )
@@ -110,4 +111,58 @@ func ReadAllResourcesFromCSV(file *os.File) ([]models.Resource, error) {
 		})
 	}
 	return resources, nil
+}
+
+func RemoveNodeFromCSV(file *os.File, node models.Node) error {
+	// Riporta il cursore all'inizio del file
+	if _, err := file.Seek(0, 0); err != nil {
+		return err
+	}
+
+	reader := csv.NewReader(file)
+	records, err := reader.ReadAll()
+	if err != nil {
+		return err
+	}
+
+	newRecords := [][]string{}
+
+	for _, record := range records {
+		if len(record) < 3 {
+			newRecords = append(newRecords, record)
+			continue
+		}
+
+		if record[0] == node.ID && record[1] == node.Host && record[2] == node.Port {
+			continue
+		}
+
+		newRecords = append(newRecords, record)
+	}
+
+	// Svuota e riscrive il file
+	if err := file.Truncate(0); err != nil {
+		return err
+	}
+	if _, err := file.Seek(0, 0); err != nil {
+		return err
+	}
+
+	writer := csv.NewWriter(file)
+	if err := writer.WriteAll(newRecords); err != nil {
+		return err
+	}
+	writer.Flush()
+
+	return writer.Error()
+}
+
+func IndexOf(slice []string, target string) int {
+	fmt.Println("target: " + target)
+	for i, v := range slice {
+		if v == target {
+			return i
+		}
+	}
+	return -1
 }

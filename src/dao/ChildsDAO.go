@@ -39,6 +39,13 @@ func (dao *ChildsDAO) WriteChilds(nodes []models.Node) error {
 	return nil
 }
 
+func (dao *ChildsDAO) RemoveChild(node models.Node) error {
+	if err := utils.RemoveNodeFromCSV(dao.file, node); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (dao *ChildsDAO) ReadAllChilds() ([]models.Node, error) {
 	err, childs := utils.ReadAllNodesFromCSV(dao.file)
 	if err != nil {

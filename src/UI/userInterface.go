@@ -36,8 +36,11 @@ func StartUI() {
 		switch cmd {
 
 		case "leave":
-			// TODO: implementa leave
-			fmt.Println("Leave non ancora implementato.")
+			leaveController := controller.LeaveController{}
+			if err := leaveController.Leave(); err != nil {
+				log.Fatal(err)
+			}
+			return
 
 		case "put":
 			if len(args) < 2 {

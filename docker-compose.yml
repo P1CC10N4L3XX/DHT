@@ -9,7 +9,8 @@ services:
     ports:
       - "50052:50051"
     volumes:
-      - /app/data
+      - ./data/node0/resources:/app/data/resources
+      - ./data/node0/routing:/app/data/routing
     environment:
       - NODE_NAME=node0
       - NODE_PORT=50051
@@ -27,7 +28,8 @@ services:
     ports:
       - "50053:50051"
     volumes:
-      - /app/data
+      - ./data/node1/resources:/app/data/resources
+      - ./data/node1/routing:/app/data/routing
     environment:
       - ENTRY_HOST=node0
       - ENTRY_PORT=50051
@@ -45,7 +47,8 @@ services:
     ports:
       - "50054:50051"
     volumes:
-      - /app/data
+      - ./data/node2/resources:/app/data/resources
+      - ./data/node2/routing:/app/data/routing
     environment:
       - ENTRY_HOST=node0
       - ENTRY_PORT=50051
@@ -63,7 +66,8 @@ services:
     ports:
       - "50055:50051"
     volumes:
-      - /app/data
+      - ./data/node3/resources:/app/data/resources
+      - ./data/node3/routing:/app/data/routing
     environment:
       - ENTRY_HOST=node0
       - ENTRY_PORT=50051
@@ -81,7 +85,8 @@ services:
     ports:
       - "50056:50051"
     volumes:
-      - /app/data
+      - ./data/node4/resources:/app/data/resources
+      - ./data/node4/routing:/app/data/routing
     environment:
       - ENTRY_HOST=node0
       - ENTRY_PORT=50051
@@ -99,7 +104,8 @@ services:
     ports:
       - "50057:50051"
     volumes:
-      - /app/data
+      - ./data/node5/resources:/app/data/resources
+      - ./data/node5/routing:/app/data/routing
     environment:
       - ENTRY_HOST=node0
       - ENTRY_PORT=50051
@@ -117,7 +123,65 @@ services:
     ports:
       - "50058:50051"
     volumes:
-      - /app/data
+      - ./data/node6/resources:/app/data/resources
+      - ./data/node6/routing:/app/data/routing
+    environment:
+      - ENTRY_HOST=node0
+      - ENTRY_PORT=50051
+    depends_on:
+      - node0
+    restart: "no"
+
+  node7:
+    image: dht-node
+    container_name: node7
+    tty: true
+    stdin_open: true
+    hostname: node7
+    command: ["./dht"]
+    ports:
+      - "50059:50051"
+    volumes:
+      - ./data/node7/resources:/app/data/resources
+      - ./data/node7/routing:/app/data/routing
+    environment:
+      - ENTRY_HOST=node0
+      - ENTRY_PORT=50051
+    depends_on:
+      - node0
+    restart: "no"
+
+  node8:
+    image: dht-node
+    container_name: node8
+    tty: true
+    stdin_open: true
+    hostname: node8
+    command: ["./dht"]
+    ports:
+      - "50060:50051"
+    volumes:
+      - ./data/node8/resources:/app/data/resources
+      - ./data/node8/routing:/app/data/routing
+    environment:
+      - ENTRY_HOST=node0
+      - ENTRY_PORT=50051
+    depends_on:
+      - node0
+    restart: "no"
+
+  node9:
+    image: dht-node
+    container_name: node9
+    tty: true
+    stdin_open: true
+    hostname: node9
+    command: ["./dht"]
+    ports:
+      - "50061:50051"
+    volumes:
+      - ./data/node9/resources:/app/data/resources
+      - ./data/node9/routing:/app/data/routing
     environment:
       - ENTRY_HOST=node0
       - ENTRY_PORT=50051

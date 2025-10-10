@@ -48,6 +48,9 @@ func (*PutController) Put(resource models.Resource) error {
 			return nil
 		} else if strings.Split(resp.Status, ":")[0] == "CONTACT_CHILD" {
 			currentAddr = strings.Split(resp.Status, ":")[1] + ":" + strings.Split(resp.Status, ":")[2]
+		} else if strings.Split(resp.Status, ":")[0] == "CONTACT_NEPHEW" {
+			currentAddr = strings.Split(resp.Status, ":")[1] + ":" + strings.Split(resp.Status, ":")[2]
+			i = utils.IndexOf(path, strings.Split(resp.Status, ":")[3])
 		}
 	}
 

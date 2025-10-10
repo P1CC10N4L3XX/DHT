@@ -13,7 +13,7 @@ type ParentDAO struct {
 }
 
 func NewParentDAO() (*ParentDAO, error) {
-	wf, err := os.OpenFile(config.Parent_CSV_path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	wf, err := os.OpenFile(config.Parent_CSV_path, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return nil, err
 	}
@@ -43,5 +43,6 @@ func (dao *ParentDAO) ReadParent() (models.Node, error) {
 	if err != nil {
 		return models.Node{}, err
 	}
+
 	return parent[0], nil
 }

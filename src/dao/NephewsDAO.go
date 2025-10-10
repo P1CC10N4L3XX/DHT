@@ -46,3 +46,10 @@ func (dao *NephewsDAO) WriteNephews(nodes []models.Node) error {
 	}
 	return nil
 }
+
+func (dao *NephewsDAO) RemoveNephew(node models.Node) error {
+	if err := utils.RemoveNodeFromCSV(dao.file, node); err != nil {
+		return err
+	}
+	return nil
+}

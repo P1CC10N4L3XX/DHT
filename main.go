@@ -2,6 +2,7 @@ package main
 
 import (
 	"DHT/src/UI"
+	"DHT/src/config"
 	"DHT/src/controller"
 	"DHT/src/models"
 	pb "DHT/src/proto/stubs"
@@ -37,6 +38,19 @@ func closeTerminal() {
 	_ = syscall.Exec("/bin/sh", []string{"sh", "-c", cmd}, os.Environ())
 }
 
+func cleanUp() {
+	if err := os.Remove(config.Parent_CSV_path); err != nil && !os.IsNotExist(err) {
+		log.Fatalf("Errore nella rimozione del CSV file: %v", err)
+	}
+	if err := os.Remove(config.Parent_CSV_path); err != nil && !os.IsNotExist(err) {
+		log.Fatalf("Errore nella rimozione del CSV file: %v", err)
+	}
+	if err := os.Remove(config.Parent_CSV_path); err != nil && !os.IsNotExist(err) {
+		log.Fatalf("Errore nella rimozione del CSV file: %v", err)
+	}
+
+}
+
 func main() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
@@ -45,10 +59,14 @@ func main() {
 	go func() {
 		<-sigs
 		fmt.Println("\n🛑 Chiusura richiesta...")
-
+		leaveController := controller.LeaveController{}
+		if err := leaveController.Leave(); err != nil {
+			log.Fatalf("Errore nella leave: %v", err)
+		}
+		cleanUp()
 		closeTerminal()
 	}()
-
+	defer cleanUp()
 	join := controller.JoinController{}
 	if len(os.Args) > 1 && os.Args[1] == "-entry" {
 		if err := join.InitConnectionAsEntry(); err != nil {

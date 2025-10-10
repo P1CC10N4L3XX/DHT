@@ -5,12 +5,15 @@ import (
 	"DHT/src/models"
 	pb "DHT/src/proto/stubs"
 	"DHT/src/session"
+	"DHT/src/utils"
 	"errors"
 	"fmt"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
+	"math/big"
+	"slices"
 	"strconv"
 	"sync"
 )
@@ -44,7 +47,7 @@ func (s *DhtServer) JoinNode(ctx context.Context, req *pb.JoinRequest) (*pb.Join
 	return nil, nil
 }
 
-/*func (s *DhtServer) LeaveNode(ctx context.Context, req *pb.LeaveRequest) (*pb.LeaveResponse, error) {
+func (s *DhtServer) LeaveNode(ctx context.Context, req *pb.LeaveRequest) (*pb.LeaveResponse, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	childsDao, err := dao.NewChildsDAO()
@@ -58,9 +61,32 @@ func (s *DhtServer) JoinNode(ctx context.Context, req *pb.JoinRequest) (*pb.Join
 	}
 	defer nephewsDao.Close()
 	nodeToLeave := models.Node{ID: req.NodeToLeave.Id, Host: req.NodeToLeave.Host, Port: req.NodeToLeave.Port}
-
+	for _, childReq := range req.Childs {
+		child := models.Node{ID: childReq.Id, Host: childReq.Host, Port: childReq.Port}
+		if err := nephewsDao.WriteNephew(child); err != nil {
+			return nil, err
+		}
+		if err := contactNodeToChangeParent(child, *session.GetSession().Node); err != nil {
+			return nil, err
+		}
+	}
+	for _, nephewReq := range req.Nephews {
+		nephew := models.Node{ID: nephewReq.Id, Host: nephewReq.Host, Port: nephewReq.Port}
+		if err := nephewsDao.WriteNephew(nephew); err != nil {
+			return nil, err
+		}
+		if err := contactNodeToChangeParent(nephew, *session.GetSession().Node); err != nil {
+			return nil, err
+		}
+	}
+	if err := childsDao.RemoveChild(nodeToLeave); err != nil {
+		return nil, err
+	}
+	if err := nephewsDao.RemoveNephew(nodeToLeave); err != nil {
+		return nil, err
+	}
 	return &pb.LeaveResponse{Status: "OK"}, nil
-}*/
+}
 
 func (s *DhtServer) ChangeParent(ctx context.Context, req *pb.ChangeParentRequest) (*pb.ChangeParentResponse, error) {
 	parentDao, err := dao.NewParentDAO()
@@ -68,7 +94,7 @@ func (s *DhtServer) ChangeParent(ctx context.Context, req *pb.ChangeParentReques
 		return nil, err
 	}
 	defer parentDao.Close()
-	parent := models.Node{ID: req.NewParent.Id, Port: req.NewParent.Host, Host: req.NewParent.Port}
+	parent := models.Node{ID: req.NewParent.Id, Port: req.NewParent.Port, Host: req.NewParent.Host}
 	if err := parentDao.WriteParent(parent); err != nil {
 		return nil, err
 	}
@@ -82,6 +108,11 @@ func (s *DhtServer) PutResource(ctx context.Context, req *pb.PutRequest) (*pb.Pu
 		return nil, err
 	}
 	defer childsDao.Close()
+	nephewsDao, err := dao.NewNephewsDAO()
+	if err != nil {
+		return nil, err
+	}
+	defer nephewsDao.Close()
 	childs, err := childsDao.ReadAllChilds()
 	if err != nil {
 		return nil, err
@@ -91,6 +122,16 @@ func (s *DhtServer) PutResource(ctx context.Context, req *pb.PutRequest) (*pb.Pu
 			return &pb.PutResponse{Status: "CONTACT_CHILD:" + child.Host + ":" + child.Port}, nil
 		}
 	}
+	nephews, err := nephewsDao.ReadAllNephews()
+	keyBigInt := new(big.Int)
+	keyBigInt.SetString(req.Resource.Key, 16)
+	path := utils.BuildPath(keyBigInt)
+	for _, nephew := range nephews {
+		if slices.Contains(path, nephew.ID) {
+			return &pb.PutResponse{Status: "CONTACT_NEPHEW:" + nephew.Host + ":" + nephew.Port + ":" + nephew.ID}, nil
+		}
+	}
+
 	resourceDao, err := dao.NewResourceDAO()
 	if err != nil {
 		return nil, err
@@ -135,6 +176,22 @@ func (s *DhtServer) GetResource(ctx context.Context, req *pb.GetRequest) (*pb.Ge
 			return &pb.GetResponse{Status: "CONTACT_CHILD:" + child.Host + ":" + child.Port}, nil
 		}
 	}
+	nephewsDao, err := dao.NewNephewsDAO()
+	if err != nil {
+		return nil, err
+	}
+	nephews, err := nephewsDao.ReadAllNephews()
+	if err != nil {
+		return nil, err
+	}
+	keyBigInt := new(big.Int)
+	keyBigInt.SetString(req.Key, 16)
+	path := utils.BuildPath(keyBigInt)
+	for _, nephew := range nephews {
+		if slices.Contains(path, nephew.ID) {
+			return &pb.GetResponse{Status: "CONTACT_NEPHEW:" + nephew.Host + ":" + nephew.Port + ":" + nephew.ID}, nil
+		}
+	}
 	return &pb.GetResponse{Status: "RESOURCE_NOTFOUND"}, nil
 }
 
@@ -154,7 +211,6 @@ func addNodeAsChild(req *pb.JoinRequest, childs []models.Node, childsDao *dao.Ch
 		id = 2*myIntegerId + 1
 		break
 	case 1:
-		fmt.Println("entrata in case 1")
 		if childs[0].ID == fmt.Sprintf("%d", 2*myIntegerId+1) {
 			id = 2*myIntegerId + 2
 		} else {
@@ -178,11 +234,17 @@ func addNodeAsChild(req *pb.JoinRequest, childs []models.Node, childsDao *dao.Ch
 	var NephewsResp []*pb.NodeInfo
 	for _, nephew := range nephews {
 		if isChild(nephew, nodeToSaveAsChild) {
+			if err := nephewsDao.RemoveNephew(nephew); err != nil {
+				return nil, err
+			}
 			if err := contactNodeToChangeParent(nephew, nodeToSaveAsChild); err != nil {
 				return nil, err
 			}
 			ChildsResp = append(ChildsResp, &pb.NodeInfo{Id: nephew.ID, Port: nephew.Port, Host: nephew.Port})
 		} else if isNephew(nephew, nodeToSaveAsChild) {
+			if err := nephewsDao.RemoveNephew(nephew); err != nil {
+				return nil, err
+			}
 			if err := contactNodeToChangeParent(nephew, nodeToSaveAsChild); err != nil {
 				return nil, err
 			}
@@ -205,8 +267,8 @@ func contactNodeToChangeParent(node models.Node, parent models.Node) error {
 	client := pb.NewDHTClient(conn)
 	newParent := &pb.NodeInfo{
 		Id:   parent.ID,
-		Host: node.Host,
-		Port: node.Port,
+		Host: parent.Host,
+		Port: parent.Port,
 	}
 	req := &pb.ChangeParentRequest{NewParent: newParent}
 

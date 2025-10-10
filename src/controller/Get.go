@@ -47,6 +47,9 @@ func (getController *GetController) Get(key string) (models.Resource, error) {
 			port := strings.Split(resp.Status, ":")[2]
 			currentAddr = fmt.Sprintf("%s:%s", host, port)
 			println(currentAddr)
+		} else if strings.Split(resp.Status, ":")[0] == "CONTACT_NEPHEW" {
+			currentAddr = strings.Split(resp.Status, ":")[1] + ":" + strings.Split(resp.Status, ":")[2]
+			i = utils.IndexOf(path, strings.Split(resp.Status, ":")[3])
 		}
 
 	}

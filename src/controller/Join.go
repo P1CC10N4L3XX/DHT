@@ -35,7 +35,7 @@ func (j *JoinController) InitConnectionAsEntry() error {
 func (j *JoinController) InitConnection() error {
 	hostname, _ := os.Hostname()
 	ts := time.Now().Unix()
-	meta := fmt.Sprintf("%s-%s", hostname, ts)
+	meta := fmt.Sprintf("%s-%d", hostname, ts)
 	id := utils.Hash(meta)
 	fmt.Println(id)
 	path := utils.BuildPath(id)
@@ -46,7 +46,6 @@ func (j *JoinController) InitConnection() error {
 		if err != nil {
 			return err
 		}
-		defer conn.Close()
 		client := pb.NewDHTClient(conn)
 		req := &pb.JoinRequest{Host: hostname, Port: config.Port, Next: target}
 
@@ -56,7 +55,7 @@ func (j *JoinController) InitConnection() error {
 		}
 		if strings.Split(resp.Status, ":")[0] == "NEED_CHILD" {
 			parent := models.Node{
-				ID:   fmt.Sprintf("%d", target),
+				ID:   fmt.Sprintf("%s", path[i-1]),
 				Port: strings.Split(currentAddr, ":")[1],
 				Host: strings.Split(currentAddr, ":")[0],
 			}
@@ -72,6 +71,7 @@ func (j *JoinController) InitConnection() error {
 		} else if strings.Split(resp.Status, ":")[0] == "CONTACT_CHILD" {
 			currentAddr = strings.Split(resp.Status, ":")[1] + ":" + strings.Split(resp.Status, ":")[2]
 		}
+		conn.Close()
 	}
 	return errors.New("JOIN_FAILED")
 }
@@ -99,10 +99,6 @@ func initState(resp *pb.JoinResponse, node models.Node, parent models.Node) erro
 	session.GetSession().Node.ID = node.ID
 	session.GetSession().Node.Host = node.Host
 	session.GetSession().Node.Port = node.Port
-
-	if err := parentDao.WriteParent(parent); err != nil {
-		return err
-	}
 
 	for i := 0; i < len(resp.Childs); i++ {
 		child := models.Node{
