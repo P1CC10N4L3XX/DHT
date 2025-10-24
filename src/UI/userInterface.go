@@ -89,7 +89,6 @@ func showHelp() {
 	fmt.Println(" put <file>  -> inserisci risorsa")
 	fmt.Println(" get <file>  -> recupera risorsa")
 	fmt.Println(" show        -> mostra info del nodo corrente (host, porta, id e risorse in gestione)")
-	fmt.Println(" ping <id>   -> ping al nodo con un certo id")
 	fmt.Println(" help        -> mostra legenda comandi")
 	fmt.Println("==============================")
 }
@@ -117,9 +116,12 @@ func showInfo() {
 	}
 	defer resourceDao.Close()
 	fmt.Printf("Nodo attivo -> ID=%s, Host=%s, Port=%s\n", node.ID, node.Host, node.Port)
-	parent, err := parentDao.ReadParent()
-	if err != nil {
-		log.Fatal(err)
+	if session.GetSession().Node.Host != "node0" {
+		parent, err := parentDao.ReadParent()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("Nodo genitore-->" + "ID:" + parent.ID + ", Host:" + parent.Host + ", Port:" + parent.Port)
 	}
 	childs, err := childsDao.ReadAllChilds()
 	if err != nil {
@@ -133,7 +135,6 @@ func showInfo() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Nodo genitore-->" + "ID:" + parent.ID + ", Host:" + parent.Host + ", Port:" + parent.Port)
 	fmt.Println("Childs:")
 	utils.PrintNodesTable(childs)
 	fmt.Println("Nephews:")

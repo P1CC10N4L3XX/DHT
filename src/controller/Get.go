@@ -41,12 +41,12 @@ func (getController *GetController) Get(key string) (models.Resource, error) {
 		if resp.Status == "RESOURCE_NOT_FOUND" {
 			return models.Resource{}, errors.New("resource not found")
 		} else if resp.Status == "RESOURCE_DETECTED" {
+			fmt.Printf("Numero di hop:%d", i)
 			return models.Resource{Key: resp.Resource.Key, Value: resp.Resource.Value}, nil
 		} else if strings.Split(resp.Status, ":")[0] == "CONTACT_CHILD" {
 			host := strings.Split(resp.Status, ":")[1]
 			port := strings.Split(resp.Status, ":")[2]
 			currentAddr = fmt.Sprintf("%s:%s", host, port)
-			println(currentAddr)
 		} else if strings.Split(resp.Status, ":")[0] == "CONTACT_NEPHEW" {
 			currentAddr = strings.Split(resp.Status, ":")[1] + ":" + strings.Split(resp.Status, ":")[2]
 			i = utils.IndexOf(path, strings.Split(resp.Status, ":")[3])

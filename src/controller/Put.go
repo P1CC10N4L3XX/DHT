@@ -45,6 +45,7 @@ func (*PutController) Put(resource models.Resource) error {
 
 		if resp.Status == "RESOURCE_STORED" {
 			fmt.Println("Risorsa VALUE=" + resource.Value + " KEY=" + resource.Key + " assegnata al nodo con id " + path[i-1])
+			fmt.Printf("Numero di hop:%d\n", i)
 			return nil
 		} else if strings.Split(resp.Status, ":")[0] == "CONTACT_CHILD" {
 			currentAddr = strings.Split(resp.Status, ":")[1] + ":" + strings.Split(resp.Status, ":")[2]
